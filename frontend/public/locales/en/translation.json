@@ -1,0 +1,12 @@
+﻿{
+  "appName": "Resumedia",
+  "appSlogan": "The Resume Builder for Blue-Collar Professionals",
+  "createResumeTitle": "Create Your Resume",
+  "fullNameLabel": "Full Name:",
+  "professionalTitleLabel": "Professional Title:",
+  "submitButton": "Create Resume",
+  "loading": "Loading...",
+  "langEnglish": "English",
+  "langHindi": "Hindi",
+  "langOdia": "Odia"
+}

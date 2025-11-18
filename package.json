@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "lucide-react": "^0.554.0"
+  }
+}
