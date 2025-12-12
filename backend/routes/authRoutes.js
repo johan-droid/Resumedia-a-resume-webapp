@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { protect } = require('../middleware/authMiddleware');
 
 // Helper function to generate a token
 const generateToken = (id) => {
@@ -80,6 +81,22 @@ router.post('/login', async (req, res) => {
     }
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// @route   GET /api/users/me
+// @desc    Get current user's profile (registration fields only)
+// @access  Private
+router.get('/me', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('_id username email phoneNumber createdAt updatedAt');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Fetch current user failed:', error);
     res.status(500).json({ message: 'Server Error' });
   }
 });

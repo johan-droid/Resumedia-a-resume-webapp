@@ -1,29 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useParams } from 'react-router-dom';
 import AIChatInterface from '../components/AIChatInterface';
+import ResumePreview from '../components/ResumePreview';
+import DashboardLayout from '../components/DashboardLayout';
+import './Editor.css';
 
 function Editor() {
   const { t } = useTranslation();
+  const { id } = useParams();
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleResumeUpdate = () => {
+    // Add a small delay to ensure backend has processed the update
+    setTimeout(() => {
+      setRefreshKey(prev => prev + 1);
+    }, 500);
+  };
 
   return (
-    <div className="container" style={{ maxWidth: '900px', marginTop: '1rem', padding: '0 1rem' }}>
-      <h1 style={{ textAlign: 'center', color: 'var(--accent-primary)', fontSize: '2rem' }}>
-        {t('editor.chatOnlyTitle', 'AI Resume Assistant')}
-      </h1>
+    <DashboardLayout showNav={true}>
+      <div className="editor-container">
+        <div className="editor-header">
+          <h1 className="editor-title">
+            {t('editor.chatOnlyTitle', 'Resume Studio')}
+          </h1>
+        </div>
 
-      <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-        {t(
-          'editor.chatOnlySubtitle',
-          'Use the assistant below to build and refine your resume content.'
-        )}
-      </p>
+        <div className="editor-grid">
+          {/* Left Panel: Chat */}
+          <AIChatInterface onTypstCodeUpdate={handleResumeUpdate} />
 
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
-        <div style={{ width: '100%', maxWidth: '520px' }}>
-          <AIChatInterface onTypstCodeUpdate={() => {}} />
+          {/* Right Panel: Preview */}
+          <div className="editor-panel">
+            <ResumePreview resumeId={id} refreshKey={refreshKey} />
+          </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
 

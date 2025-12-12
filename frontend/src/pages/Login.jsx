@@ -24,23 +24,23 @@ function Login() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-    
+
     try {
       // Sending phoneNumber instead of email
       const res = await axios.post('http://localhost:5001/api/users/login', {
         phoneNumber,
         password
       });
-      
+
       console.log('Logged in:', res.data);
-      
+
       // Save the token and user info
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('userInfo', JSON.stringify(res.data));
-      
+
       // Redirect to dashboard
       navigate('/dashboard');
-      
+
     } catch (err) {
       console.error('Login error:', err);
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
@@ -51,7 +51,7 @@ function Login() {
 
   return (
     <div className="container" style={{ maxWidth: '450px', marginTop: '5rem' }}>
-      <div className="glass-panel" style={{ 
+      <div className="glass-panel" style={{
         padding: '3rem',
         position: 'relative',
         overflow: 'hidden'
@@ -68,12 +68,12 @@ function Login() {
           opacity: 0.3,
           pointerEvents: 'none'
         }}></div>
-        
+
         <div style={{ position: 'relative', zIndex: 1 }}>
-          <h2 style={{ 
-            textAlign: 'center', 
-            marginBottom: '2rem', 
-            color: '#fff', 
+          <h2 style={{
+            textAlign: 'center',
+            marginBottom: '2rem',
+            color: '#fff',
             fontSize: '2rem',
             background: 'linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))',
             WebkitBackgroundClip: 'text',
@@ -81,7 +81,7 @@ function Login() {
           }}>
             {t('login', 'Login')}
           </h2>
-          
+
           {error && (
             <div style={{
               background: 'rgba(239, 68, 68, 0.1)',
@@ -103,7 +103,7 @@ function Login() {
               {error}
             </div>
           )}
-          
+
           <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
@@ -119,7 +119,7 @@ function Login() {
                   name="phoneNumber"
                   value={phoneNumber}
                   onChange={onChange}
-                  placeholder={t('login.phonePlaceholder', '9123456789')}
+                  placeholder={t('login.phonePlaceholder', 'Enter your phone number')}
                   required
                   style={{
                     width: '100%',
@@ -171,12 +171,12 @@ function Login() {
               </div>
             </div>
 
-            <button 
-              type="submit" 
-              className="btn-primary" 
+            <button
+              type="submit"
+              className="btn-primary"
               disabled={isLoading}
-              style={{ 
-                marginTop: '1rem', 
+              style={{
+                marginTop: '1rem',
                 width: '100%',
                 padding: '0.9rem',
                 borderRadius: 'var(--radius-md)',

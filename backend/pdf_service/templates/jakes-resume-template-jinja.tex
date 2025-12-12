@@ -1,0 +1,136 @@
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.5in}
+\addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small#3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+\begin{document}
+
+% Header
+\begin{center}
+    \textbf{\Huge \scshape {{ name }}} \\ \vspace{1pt}
+    {% if phone %}\small {{ phone }}{% endif %}{% if phone and email %} $|$ {% endif %}{% if email %}\href{mailto:{{ email }}}{\underline{ {{ email }} }}{% endif %}
+    {% if linkedin %} $|$ \href{https://linkedin.com/in/{{ linkedin }}}{\underline{linkedin.com/in/{{ linkedin }}}}{% endif %}
+    {% if github %} $|$ \href{https://github.com/{{ github }}}{\underline{github.com/{{ github }}}}{% endif %}
+\end{center}
+
+{% if education %}
+% Education
+\section{Education}
+  \resumeSubHeadingListStart
+    {% for edu in education %}
+    \resumeSubheading
+      { {{ edu.institution }} }{ {{ edu.location }} }
+      { {{ edu.degree }} }{ {{ edu.date }} }
+    {% endfor %}
+  \resumeSubHeadingListEnd
+{% endif %}
+
+{% if experience %}
+% Experience
+\section{Experience}
+  \resumeSubHeadingListStart
+    {% for exp in experience %}
+    \resumeSubheading
+      { {{ exp.company }} }{ {{ exp.location }} }
+      { {{ exp.position }} }{ {{ exp.date }} }
+      {% if exp.items %}
+      \resumeItemListStart
+        {% for item in exp.items %}
+        \resumeItem{ {{ item }} }
+        {% endfor %}
+      \resumeItemListEnd
+      {% endif %}
+    {% endfor %}
+  \resumeSubHeadingListEnd
+{% endif %}
+
+{% if projects %}
+% Projects
+\section{Projects}
+    \resumeSubHeadingListStart
+      {% for project in projects %}
+      \resumeProjectHeading
+          {\textbf{ {{ project.name }} }{% if project.technologies %} $|$ \emph{ {{ project.technologies }} }{% endif %}}{ {{ project.date }} }
+          {% if project.items %}
+          \resumeItemListStart
+            {% for item in project.items %}
+            \resumeItem{ {{ item }} }
+            {% endfor %}
+          \resumeItemListEnd
+          {% endif %}
+      {% endfor %}
+    \resumeSubHeadingListEnd
+{% endif %}
+
+{% if skills %}
+% Qualifications
+\section{Qualifications}
+ \begin{itemize}[leftmargin=0.15in, label={}]
+    {% for skill_group in skills %}
+    \small{\item{
+     \textbf{ {{ skill_group.name }} :} {{ skill_group.keywords | join(', ') }}
+    }}
+    {% endfor %}
+ \end{itemize}
+{% endif %}
+
+\end{document}

@@ -6,7 +6,7 @@ function ResumeForm() {
   const { t } = useTranslation();
   const [selectedTemplate, setSelectedTemplate] = useState('skills-first');
 
-  // Typst Templates Configuration (Blue-Collar Focused)
+  // Typst Templates Configuration - Simplified to 2 options
   const templates = [
     {
       id: 'skills-first',
@@ -18,39 +18,12 @@ function ResumeForm() {
       ),
     },
     {
-      id: 'chrono-sidebar',
-      name: t('resume.templates.chronoSidebar', 'Chronological + Skills Sidebar'),
+      id: 'chronological',
+      name: t('resume.templates.chronological', 'Chronological'),
       color: '#10b981',
       desc: t(
-        'resume.templates.chronoSidebarDesc',
-        'Clear work history with a side column for skills, licenses, and equipment operated.'
-      ),
-    },
-    {
-      id: 'trade-focused',
-      name: t('resume.templates.tradeFocused', 'Trade-Focused'),
-      color: '#f97316',
-      desc: t(
-        'resume.templates.tradeFocusedDesc',
-        'Organized by trade skills like welding, electrical, or plumbing with projects under each.'
-      ),
-    },
-    {
-      id: 'classic-one-column',
-      name: t('resume.templates.classicOneColumn', 'Simple One-Column Classic'),
-      color: '#64748b',
-      desc: t(
-        'resume.templates.classicOneColumnDesc',
-        'Clean, single-column layout that prints and scans well for traditional employers and ATS.'
-      ),
-    },
-    {
-      id: 'achievements-based',
-      name: t('resume.templates.achievementsBased', 'Achievements-Based'),
-      color: '#ec4899',
-      desc: t(
-        'resume.templates.achievementsBasedDesc',
-        'Highlights measurable results like downtime reduced, jobs completed, and safety record.'
+        'resume.templates.chronologicalDesc',
+        'Traditional work history focused layout. Clear timeline of your experience.'
       ),
     },
   ];
@@ -64,7 +37,7 @@ function ResumeForm() {
         alert(t('auth.unauthorized', 'Please log in to create a resume'));
         return;
       }
-      
+
       const payload = { template: selectedTemplate };
       const config = {
         headers: {
@@ -72,7 +45,7 @@ function ResumeForm() {
           'Content-Type': 'application/json'
         }
       };
-      
+
       const res = await axios.post('http://localhost:5001/api/resumes', payload, config);
       console.log('Resume Created:', res.data);
 
@@ -84,7 +57,7 @@ function ResumeForm() {
       console.error('Error creating resume:', err);
       const errorMessage = err.response?.data?.message || t('resume.error', 'Error creating resume');
       alert(errorMessage);
-      
+
       // If token is invalid/expired, redirect to login
       if (err.response?.status === 401) {
         localStorage.removeItem('token');
@@ -95,17 +68,17 @@ function ResumeForm() {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <h1 style={{ 
-        textAlign: 'center', 
+      <h1 style={{
+        textAlign: 'center',
         marginBottom: '1rem',
         color: 'var(--accent-primary)',
         fontSize: '2.2rem'
       }}>
         {t('resume.createTitle', 'Create Your Resume')}
       </h1>
-      <p style={{ 
-        textAlign: 'center', 
-        color: 'var(--text-secondary)', 
+      <p style={{
+        textAlign: 'center',
+        color: 'var(--text-secondary)',
         marginBottom: '3rem',
         fontSize: '1.1rem'
       }}>
@@ -114,13 +87,13 @@ function ResumeForm() {
 
       <form onSubmit={onSubmit}>
         {/* TEMPLATE SELECTION ONLY */}
-        <div className="glass-panel" style={{ 
-          padding: '2.5rem', 
+        <div className="glass-panel" style={{
+          padding: '2.5rem',
           marginBottom: '2rem',
           borderRadius: 'var(--radius-lg)'
         }}>
-          <h3 style={{ 
-            marginBottom: '1.5rem', 
+          <h3 style={{
+            marginBottom: '1.5rem',
             color: '#fff',
             fontSize: '1.3rem',
             fontWeight: 600
@@ -128,22 +101,22 @@ function ResumeForm() {
             1. {t('resume.chooseTemplate', 'Choose Typst Template')}
           </h3>
 
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-            gap: '15px' 
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '15px'
           }}>
             {templates.map((tmpl) => (
-              <div 
+              <div
                 key={tmpl.id}
                 onClick={() => setSelectedTemplate(tmpl.id)}
-                style={{ 
+                style={{
                   cursor: 'pointer',
-                  border: selectedTemplate === tmpl.id 
-                    ? `2px solid ${tmpl.color}` 
+                  border: selectedTemplate === tmpl.id
+                    ? `2px solid ${tmpl.color}`
                     : '1px solid var(--glass-border)',
-                  backgroundColor: selectedTemplate === tmpl.id 
-                    ? 'rgba(255,255,255,0.05)' 
+                  backgroundColor: selectedTemplate === tmpl.id
+                    ? 'rgba(255,255,255,0.05)'
                     : 'transparent',
                   borderRadius: '12px',
                   padding: '1.5rem',
@@ -155,31 +128,31 @@ function ResumeForm() {
                   }
                 }}
               >
-                <div style={{ 
-                  width: '40px', 
-                  height: '40px', 
-                  borderRadius: '8px', 
-                  backgroundColor: tmpl.color, 
-                  marginBottom: '1rem', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '8px',
+                  backgroundColor: tmpl.color,
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   fontWeight: 'bold',
                   color: 'white',
                   fontSize: '1.2rem'
                 }}>
                   {tmpl.name.charAt(0)}
                 </div>
-                <h4 style={{ 
+                <h4 style={{
                   margin: '0 0 0.5rem 0',
                   color: '#fff',
                   fontSize: '1.1rem'
                 }}>
                   {tmpl.name}
                 </h4>
-                <p style={{ 
-                  fontSize: '0.85rem', 
-                  color: 'var(--text-secondary)', 
+                <p style={{
+                  fontSize: '0.85rem',
+                  color: 'var(--text-secondary)',
                   margin: 0,
                   lineHeight: 1.5
                 }}>
@@ -190,12 +163,12 @@ function ResumeForm() {
           </div>
         </div>
 
-        <button 
-          type="submit" 
-          className="btn-primary" 
-          style={{ 
-            width: '100%', 
-            padding: '1rem', 
+        <button
+          type="submit"
+          className="btn-primary"
+          style={{
+            width: '100%',
+            padding: '1rem',
             fontSize: '1.1rem',
             marginTop: '1rem',
             display: 'flex',

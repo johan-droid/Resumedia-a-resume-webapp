@@ -14,7 +14,7 @@ function Register() {
 
   const { username, email, phoneNumber, password, confirmPassword } = formData;
 
-  const onChange = (e) => 
+  const onChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const onSubmit = async (e) => {
@@ -23,7 +23,7 @@ function Register() {
       alert("Passwords do not match");
       return;
     }
-    
+
     try {
       // Sending all data including email and phone
       const res = await axios.post('http://localhost:5001/api/users/register', {
@@ -32,7 +32,7 @@ function Register() {
         phoneNumber,
         password
       });
-      
+
       console.log(res.data);
       alert('Registration successful! Please log in.');
       navigate('/login'); // Redirect to login after success
@@ -46,73 +46,73 @@ function Register() {
     <div className="container" style={{ maxWidth: '500px', marginTop: '5rem' }}>
       <div className="glass-panel" style={{ padding: '3rem' }}>
         <h2 style={{ textAlign: 'center', marginBottom: '2rem', color: '#fff' }}>Create Account</h2>
-        
+
         <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-          
+
           {/* Username */}
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: '#ccc' }}>Username</label>
-            <input 
+            <input
               className="glass-input"
-              type="text" 
-              name="username" 
-              value={username} 
-              onChange={onChange} 
-              placeholder="Ashutosh Sahoo" 
-              required 
+              type="text"
+              name="username"
+              value={username}
+              onChange={onChange}
+              placeholder="Enter your username"
+              required
             />
           </div>
 
           {/* Email (CRITICAL FIX: Backend requires this) */}
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: '#ccc' }}>Email Address</label>
-            <input 
+            <input
               className="glass-input"
-              type="email" 
-              name="email" 
-              value={email} 
-              onChange={onChange} 
-              placeholder="ashutosh@example.com" 
-              required 
+              type="email"
+              name="email"
+              value={email}
+              onChange={onChange}
+              placeholder="Enter your email"
+              required
             />
           </div>
 
           {/* Phone Number */}
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: '#ccc' }}>Phone Number</label>
-            <input 
+            <input
               className="glass-input"
-              type="text" 
-              name="phoneNumber" 
-              value={phoneNumber} 
-              onChange={onChange} 
-              placeholder="9124692069" 
+              type="text"
+              name="phoneNumber"
+              value={phoneNumber}
+              onChange={onChange}
+              placeholder="Enter your phone number"
             />
           </div>
 
           {/* Password */}
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: '#ccc' }}>Password</label>
-            <input 
+            <input
               className="glass-input"
-              type="password" 
-              name="password" 
-              value={password} 
-              onChange={onChange} 
-              required 
+              type="password"
+              name="password"
+              value={password}
+              onChange={onChange}
+              required
             />
           </div>
 
           {/* Confirm Password */}
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: '#ccc' }}>Confirm Password</label>
-            <input 
+            <input
               className="glass-input"
-              type="password" 
-              name="confirmPassword" 
-              value={confirmPassword} 
-              onChange={onChange} 
-              required 
+              type="password"
+              name="confirmPassword"
+              value={confirmPassword}
+              onChange={onChange}
+              required
             />
           </div>
 

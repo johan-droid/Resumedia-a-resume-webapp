@@ -162,3 +162,31 @@ button {
     color: var(--accent-secondary);
   }
 }
+
+/* Layout Adjustments for Sidebar */
+.dashboard-content {
+  margin-left: 280px; /* Matches default Sidebar width */
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 100vh;
+}
+
+/* Tablet Responsive */
+@media (max-width: 1024px) {
+  .dashboard-content {
+    margin-left: 240px;
+  }
+}
+
+/* Mobile Responsive - Sidebar becomes icon-only */
+@media (max-width: 768px) {
+  .dashboard-content {
+    margin-left: 70px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Adjust container padding on mobile */
+  .dashboard-content .container {
+    padding: 1.5rem !important;
+  }
+}

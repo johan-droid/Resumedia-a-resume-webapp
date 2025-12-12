@@ -22,6 +22,11 @@ const resumeSchema = new mongoose.Schema(
       phone: String,
       email: String,
     },
+    education: String,
+    dateOfBirth: String,
+    location: String,
+    experienceSummary: String,
+    jobStatus: String,
     template: {
       type: String,
       default: 'skills-first',

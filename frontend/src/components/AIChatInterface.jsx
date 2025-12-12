@@ -2,19 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
+import '../pages/Editor.css';
 
 // Structure to define the initial conversational steps
 const conversationalFlow = [
-  // Step 0: Start conversation
-  { step: 'start', role: 'ai', content: "Welcome! I'm your AI Resume Assistant. Let's start building your resume. What is your **full name** and **professional title** (e.g., 'Certified Welder')? Please separate them with a comma." },
-  // Step 1: Ask for contact
-  { step: 'ask_contact', role: 'ai', content: "Great! Now, please provide your **email address** and **phone number** so employers can contact you. Please use a comma to separate them (e.g., email@example.com, 555-123-4567)." },
-  // Step 2: Ask for summary
-  { step: 'ask_summary', role: 'ai', content: "Next, tell me about your career goals and key strengths. Please provide a **short professional summary** (2-3 sentences)." },
-  // Step 3: Ask for skills
-  { step: 'ask_skills', role: 'ai', content: "Perfect. What are your **top 5-10 job-related skills** and any **certifications** you hold? Please list them all, separated by commas (e.g., MIG Welding, Forklift Certified, OSHA 10)." },
-  // Step 4: Complete
-  { step: 'complete', role: 'ai', content: "Awesome! We have your foundation data. Feel free to use the editor to refine your content, or ask me for suggestions. I'm ready to help you with your work experience!" },
+  { step: 'name_role', role: 'ai', content: "Let's get rolling. What's your **full name** and what type of work do you do? (Example: Maria Smith, Certified Welder)" },
+  { step: 'education', role: 'ai', content: "Thanks! What's your **education or trade school / certifications**? (Example: High School Diploma, OSHA 10)." },
+  { step: 'dob', role: 'ai', content: "Got it. What's your **date of birth**? (Month Day, Year is perfect)." },
+  { step: 'location', role: 'ai', content: "Where are you based? Please share your **city and state/region**." },
+  { step: 'experience', role: 'ai', content: "Tell me about your **most recent job**. Include the company, your role, key duties, and approximate dates." },
+  { step: 'job_status', role: 'ai', content: "Are you **still working there** or when/why did you leave?" },
+  { step: 'skills', role: 'ai', content: "Finally, list your **key skills, tools, and licenses**. Separate them with commas (e.g., MIG Welding, Forklift Certified)." },
+  { step: 'complete', role: 'ai', content: "Awesome. I have the basics saved. Ask for bullet rewrites, more skills, or anything else you need." },
 ];
 
 function AIChatInterface({ onTypstCodeUpdate }) {
@@ -45,7 +44,7 @@ function AIChatInterface({ onTypstCodeUpdate }) {
     const token = localStorage.getItem('token');
     if (!token) {
       navigate('/login');
-      return false;
+      return { success: false, error: t('auth.unauthorized', 'Please log in again to continue.') };
     }
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -59,10 +58,16 @@ function AIChatInterface({ onTypstCodeUpdate }) {
       // 3. Update the editor state in the parent component
       onTypstCodeUpdate(typstRes.data);
 
-      return true; // Success
+      return { success: true };
     } catch (err) {
       console.error('Error saving resume data and updating Typst:', err);
-      return false; // Failure
+      const backendMessage = err.response?.data?.message;
+      return {
+        success: false,
+        error:
+          backendMessage ||
+          t('chat.saveError', 'I failed to save that data. Please try again.'),
+      };
     }
   };
 
@@ -82,46 +87,69 @@ function AIChatInterface({ onTypstCodeUpdate }) {
     let nextStepIndex = currentStep;
     let aiResponseText = '';
     let dataToSave = {};
-    let saveSuccessful = true;
+    let saveResult = { success: true };
+    let skipSaveForValidation = false;
+    let validationMessage = '';
 
     // 1. Process User Input based on the current step
     switch (stepInfo.step) {
-      case 'start':
-        // Expecting: Full Name, Professional Title
-        const parts = message.split(',').map(p => p.trim());
-        dataToSave = {
-          fullName: parts[0] || '',
-          professionalTitle: parts[1] || ''
-        };
+      case 'name_role':
+        const parts = message.split(',').map(p => p.trim()).filter(Boolean);
+        const fullName = parts[0] || '';
+        const professionalTitle = parts[1] || parts[0]?.split(' ').slice(-1).join(' ') || 'Professional';
+        if (!fullName) {
+          skipSaveForValidation = true;
+          validationMessage = t('chat.fullNameRequired', 'Please share your full name. Example: "Maria Smith, Certified Welder".');
+          break;
+        }
+        dataToSave = { fullName, professionalTitle };
         nextStepIndex = 1;
         break;
 
-      case 'ask_contact':
-        // Expecting: Email, Phone Number
-        const contactParts = message.split(',').map(p => p.trim());
-        dataToSave = {
-          contact: {
-            email: contactParts[0] || '',
-            phone: contactParts[1] || ''
-          }
-        };
+      case 'education':
+        if (message.length < 2) {
+          skipSaveForValidation = true;
+          validationMessage = t('chat.educationRequired', 'Please share your schooling, trade program, or certifications.');
+          break;
+        }
+        dataToSave = { education: message };
         nextStepIndex = 2;
         break;
 
-      case 'ask_summary':
-        // Expecting: Professional Summary
-        dataToSave = { summary: message };
+      case 'dob':
+        dataToSave = { dateOfBirth: message };
         nextStepIndex = 3;
         break;
 
-      case 'ask_skills':
-        // Expecting: Skills and Certifications
-        const skillsList = message.split(',').map(s => s.trim()).filter(s => s.length > 0);
-        dataToSave = {
-          skills: skillsList,
-          certifications: skillsList // Simplified: use the same input for both for now
-        };
+      case 'location':
+        if (message.length < 2) {
+          skipSaveForValidation = true;
+          validationMessage = t('chat.locationRequired', 'Please share a city and state so we know where you are based.');
+          break;
+        }
+        dataToSave = { location: message };
         nextStepIndex = 4;
+        break;
+
+      case 'experience':
+        dataToSave = { experienceSummary: message };
+        nextStepIndex = 5;
+        break;
+
+      case 'job_status':
+        dataToSave = { jobStatus: message };
+        nextStepIndex = 6;
+        break;
+
+      case 'skills':
+        const skillsList = message.split(',').map((s) => s.trim()).filter(Boolean);
+        if (!skillsList.length) {
+          skipSaveForValidation = true;
+          validationMessage = t('chat.skillsRequired', 'Please list at least one skill or tool separated by commas.');
+          break;
+        }
+        dataToSave = { skills: skillsList, certifications: skillsList };
+        nextStepIndex = 7;
         break;
 
       case 'complete':
@@ -142,19 +170,23 @@ function AIChatInterface({ onTypstCodeUpdate }) {
           aiResponseText = res.data.response;
         } catch (err) {
           aiResponseText = t('chat.chatApiError', 'I am having trouble connecting to the AI service. Please check your API key setup.');
-          saveSuccessful = false;
+          saveResult = { success: false };
         }
-        nextStepIndex = 4; // Stay on the complete step
+        nextStepIndex = conversationalFlow.length - 1; // Stay on the complete step
         break;
     }
 
-    // 3. Save data and update history if it's a foundation step (0-3)
-    if (currentStep <= 3) {
-      saveSuccessful = await saveResumeData(dataToSave);
-      if (saveSuccessful) {
+    const shouldSave = !skipSaveForValidation && stepInfo.step !== 'complete';
+
+    if (skipSaveForValidation) {
+      aiResponseText = validationMessage;
+      nextStepIndex = currentStep;
+    } else if (shouldSave) {
+      saveResult = await saveResumeData(dataToSave);
+      if (saveResult.success) {
         aiResponseText = conversationalFlow[nextStepIndex].content;
       } else {
-        aiResponseText = t('chat.saveError', 'I failed to save that data. Please try again.');
+        aiResponseText = saveResult.error;
         nextStepIndex = currentStep; // Stay on the same step
       }
     }
@@ -166,90 +198,53 @@ function AIChatInterface({ onTypstCodeUpdate }) {
   };
 
   return (
-    <div className="glass-panel" style={{
-      padding: '1rem',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: 'rgba(99, 102, 241, 0.05)',
-      height: '100%',
-      maxHeight: 'calc(100vh - 200px)'
-    }}>
-      <h3 style={{
-        margin: '0 0 1rem 0',
-        fontSize: '1.2rem',
-        color: 'var(--accent-primary)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        flexShrink: 0
-      }}>
-        🤖 {t('editor.aiChat', 'AI Resume Assistant')}
-      </h3>
+    <div className="editor-panel">
+      {/* Header */}
+      <div className="panel-header">
+        <div style={{
+          width: '32px',
+          height: '32px',
+          borderRadius: '8px',
+          background: 'var(--accent-primary)',
+          display: 'grid',
+          placeItems: 'center'
+        }}>
+          🤖
+        </div>
+        <div>
+          <h3 className="panel-title">{t('editor.aiChat', 'AI Assistant')}</h3>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Online</span>
+        </div>
+      </div>
 
-      <div style={{
-        flexGrow: 1,
-        overflowY: 'auto',
-        marginBottom: '1rem',
-        padding: '10px',
-        border: '1px solid var(--glass-border)',
-        borderRadius: '8px',
-        fontSize: '0.9rem',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        minHeight: '200px'
-      }}>
-        {/* Chat History */}
+      {/* Messages */}
+      <div className="chat-messages-area custom-scroll">
         {chatHistory.map((message, index) => (
           <div
             key={index}
-            style={{
-              alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
-              maxWidth: '85%',
-              padding: '8px 12px',
-              borderRadius: '15px',
-              background: message.role === 'user' ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)',
-              color: 'white',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              lineHeight: '1.4'
-            }}
+            className={`chat-bubble ${message.role === 'user' ? 'user' : 'ai'}`}
           >
-            {message.content}
+            {message.content.replace(/\*\*/g, '')}
           </div>
         ))}
         {isAiTyping && (
-          <div style={{
-            alignSelf: 'flex-start',
-            padding: '8px 12px',
-            borderRadius: '15px',
-            background: 'rgba(255,255,255,0.1)',
-            color: 'white',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <span className="typing-dot"></span>
-            <span className="typing-dot"></span>
-            <span className="typing-dot"></span>
+          <div className="chat-bubble ai">
+            <div className="typing-dots">
+              <div className="dot"></div>
+              <div className="dot"></div>
+              <div className="dot"></div>
+            </div>
           </div>
         )}
         <div ref={chatEndRef} />
       </div>
 
-      <form
-        onSubmit={handleChatSubmit}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '5px',
-          flexShrink: 0
-        }}
-      >
-        <div style={{ position: 'relative' }}>
+      {/* Input */}
+      <form onSubmit={handleChatSubmit} className="chat-input-area">
+        <div className="chat-input-wrapper">
           <textarea
-            rows="2"
-            name="chatInput"
+            className="chat-textarea custom-scroll"
+            placeholder={t('editor.chatPlaceholder', 'Type your details here...')}
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={(e) => {
@@ -259,68 +254,20 @@ function AIChatInterface({ onTypstCodeUpdate }) {
               }
             }}
             disabled={isAiTyping}
-            style={{
-              width: '100%',
-              padding: '10px 40px 10px 10px',
-              fontFamily: 'inherit',
-              fontSize: '0.9rem',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid var(--glass-border)',
-              borderRadius: '8px',
-              color: 'var(--text-primary)',
-              resize: 'none',
-              minHeight: '44px',
-              maxHeight: '120px',
-              overflowY: 'auto',
-              paddingRight: '40px'
-            }}
-            placeholder={t('editor.chatPlaceholder', 'Type your message here...')}
+            rows={1}
           />
-          <button
-            type="submit"
+          <button 
+            type="submit" 
+            className="send-button"
             disabled={isAiTyping || !chatInput.trim()}
-            style={{
-              position: 'absolute',
-              right: '8px',
-              bottom: '8px',
-              background: 'transparent',
-              border: 'none',
-              color: chatInput.trim() ? 'var(--accent-primary)' : '#666',
-              cursor: chatInput.trim() && !isAiTyping ? 'pointer' : 'default',
-              padding: '4px',
-              borderRadius: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: chatInput.trim() ? 1 : 0.6
-            }}
-            title="Send message"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>
           </button>
         </div>
       </form>
-
-      <style jsx>{`
-        @keyframes typing {
-          0%, 60%, 100% { transform: translateY(0); }
-          30% { transform: translateY(-4px); }
-        }
-        .typing-dot {
-          display: inline-block;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background-color: currentColor;
-          animation: typing 1.4s infinite ease-in-out;
-        }
-        .typing-dot:nth-child(1) { animation-delay: 0s; }
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-      `}</style>
     </div>
   );
 }

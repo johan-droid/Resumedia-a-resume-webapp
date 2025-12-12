@@ -1,0 +1,45 @@
+[2025-11-19T21:49:55.499Z] === ATS Upload Request === 
+[2025-11-19T21:49:55.500Z] File received: "Fake-Resume.pdf"
+[2025-11-19T21:49:55.501Z] Parsing resume... 
+[2025-11-19T21:49:55.676Z] Resume parsed, length: 1192
+[2025-11-19T21:49:55.678Z] Validating resume... 
+[2025-11-19T21:49:56.349Z] Validation result: {
+  "isResume": false,
+  "confidence": 0,
+  "reason": "Validation error occurred"
+}
+[2025-11-19T21:49:56.351Z] Validation failed: {
+  "isResume": false,
+  "confidence": 0,
+  "reason": "Validation error occurred"
+}
+[2025-12-04T18:30:39.772Z] === ATS Upload Request === 
+[2025-12-04T18:30:39.773Z] File received: "RPGS class-2.pdf"
+[2025-12-04T18:30:39.774Z] Parsing resume... 
+[2025-12-04T18:30:39.978Z] Resume parsed, length: 12483
+[2025-12-04T18:30:39.979Z] Validating resume... 
+[2025-12-04T18:30:40.622Z] Validation result: {
+  "isResume": false,
+  "confidence": 0,
+  "reason": "Validation error occurred"
+}
+[2025-12-04T18:30:40.623Z] Validation failed: {
+  "isResume": false,
+  "confidence": 0,
+  "reason": "Validation error occurred"
+}
+[2025-12-04T18:33:00.416Z] === ATS Upload Request === 
+[2025-12-04T18:33:00.417Z] File received: "functionalsample.pdf"
+[2025-12-04T18:33:00.418Z] Parsing resume... 
+[2025-12-04T18:33:00.453Z] Resume parsed, length: 1481
+[2025-12-04T18:33:00.454Z] Validating resume... 
+[2025-12-04T18:33:01.095Z] Validation result: {
+  "isResume": false,
+  "confidence": 0,
+  "reason": "Validation error occurred"
+}
+[2025-12-04T18:33:01.095Z] Validation failed: {
+  "isResume": false,
+  "confidence": 0,
+  "reason": "Validation error occurred"
+}

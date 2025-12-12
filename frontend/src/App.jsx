@@ -2,12 +2,15 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './components/LanguageSwitcher';
+import Navbar from './components/Navbar';
 
 // Import Pages
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Editor from './pages/Editor';
+import ATSScore from './pages/ATSScore';
+import Profile from './pages/Profile';
 
 function Home() {
   const { t } = useTranslation();
@@ -88,6 +91,8 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/ats-score" element={<ATSScore />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/editor/:id" element={<Editor />} /> 
           </Routes>
         </main>
