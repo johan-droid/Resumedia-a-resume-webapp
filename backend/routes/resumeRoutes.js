@@ -9,7 +9,7 @@ const { spawn } = require('child_process');
 // Helper: Convert MongoDB Resume to Latex JSON Format
 const mapResumeToLatexFormat = (mongoResume) => {
   const contact = mongoResume.contact || {};
-  
+
   // Create Skill Groups for Blue-Collar Focus
   const skillGroups = [];
   if (mongoResume.certifications?.length) {
@@ -37,31 +37,31 @@ const mapResumeToLatexFormat = (mongoResume) => {
 
   return {
     selectedTemplate: 2,
-    headings: { 
-      work: "Work History", 
-      education: "Education & Training", 
-      projects: "Key Projects", 
-      skills: "Qualifications" 
+    headings: {
+      work: "Work History",
+      education: "Education & Training",
+      projects: "Key Projects",
+      skills: "Qualifications"
     },
     basics: {
       name: mongoResume.fullName || "Your Name",
       email: contact.email || "",
       phone: contact.phone || "",
-      linkedin: "", 
+      linkedin: "",
       github: "",
       location: { address: mongoResume.location || "" },
       summary: summary
     },
-    education: mongoResume.education ? [{ 
-      institution: mongoResume.education, 
-      area: "", 
-      studyType: "", 
-      startDate: "", 
-      endDate: "" 
+    education: mongoResume.education ? [{
+      institution: mongoResume.education,
+      area: "",
+      studyType: "",
+      startDate: "",
+      endDate: ""
     }] : [],
     work: workFormatted,
     skills: skillGroups,
-    projects: [], 
+    projects: [],
     awards: [],
     sections: ["profile", "skills", "work", "education"]
   };
@@ -84,34 +84,54 @@ const model = genAI.getGenerativeModel({
 const SYSTEM_PROMPTS = {
   chat: (template) => `You are a specialized resume assistant for BLUE-COLLAR professionals (trades, construction, driving, manufacturing).
     
-    Your goal is to extract HARD SKILLS, LICENSES, and MACHINERY experience.
+    Your goal is to extract a COMPLETE resume profile including Work History, Education, and Skills.
     
     Follow this onboarding flow (ask one at a time):
       1) Full Name and Target Job Title (e.g., "Joe Smith, HVAC Technician").
-      2) **Critical:** Do you have any licenses or certifications? (Ask specifically about OSHA, CDL, welding certs, forklifts, or state licenses).
-      3) **Equipment:** What specific tools, heavy machinery, or vehicles can you operate?
-      4) Work History: Most recent company, role, and what you actually DID there (hands-on tasks).
-      5) Education: High school, trade school, or apprenticeships.
-      6) Contact Info: City/State, Phone number.
+      2) **Date of Birth:** Ask for their Date of Birth. **IMPORTANT:** Require the format "DD Month YYYY" (e.g., "24 June 2002"). If they provide it in a different format or it's unclear, politely ask them to correct it.
+      3) **Critical:** Do you have any licenses or certifications? (Ask specifically about OSHA, CDL, welding certs, forklifts, or state licenses).
+      4) **Equipment:** What specific tools, heavy machinery, or vehicles can you operate?
+      5) Work History: Most recent company, role, and what you actually DID there (hands-on tasks).
+      6) Education: High school, trade school, or apprenticeships.
+      7) Contact Info: City/State, Phone number.
 
     **CRITICAL OUTPUT RULES:**
-    - If the user mentions a certification (e.g., "I have my Class A"), extract it clearly.
-    - If the user mentions equipment (e.g., "I drove a bobcat"), extract "Bobcat" as a skill.
+    - If the user provides ANY new information (name, job, work history, education, DOB), you MUST output the "RESUME_DATA_JSON" block at the end.
+    - **Date of Birth:** Must be in "DD Month YYYY" format.
+    - **Work Experience:** Extract company name, job title, dates (if given), and a list of duties.
+    - **Education:** Extract the school name and degree/certificate as a single string.
     
     At the end of EVERY response, output the extracted data in this JSON format so the system can save it:
     
-    SKILLS_JSON: ["OSHA 10", "Forklift Certified", "MIG Welding", "Blueprint Reading"]
-    CERTS_JSON: ["CDL Class A", "NCCCO Crane Operator", "EPA 608 Universal"]
+    RESUME_DATA_JSON:
+    {
+      "fullName": "Joe Smith",
+      "professionalTitle": "HVAC Technician",
+      "dateOfBirth": "24 June 1990",
+      "contact": { "phone": "555-0199", "email": "joe@example.com" },
+      "location": "Detroit, MI",
+      "education": "Detroit Trade School - HVAC Certification",
+      "workExperience": [
+        { 
+          "company": "ABC Cooling", 
+          "jobTitle": "Lead Installer", 
+          "startDate": "2020", 
+          "endDate": "Present", 
+          "duties": ["Installed residential AC units", "Managed crew of 3"] 
+        }
+      ],
+      "skills": ["OSHA 10", "Brazing", "Blueprint Reading"],
+      "certifications": ["EPA 608 Universal", "Drivers License"]
+    }
     
-    Keep your tone respectful, direct, and professional. Avoid corporate buzzwords like "synergy" or "ideation". Use action words like "Operated", "Built", "Repaired", "Hauled".`,
+    Keep your tone respectful, direct, and professional. Avoid corporate buzzwords.`,
 
   skillExtraction: `Extract a JSON array of 5-10 relevant skills from the provided text. 
     Include both technical and soft skills. 
     Format: ["skill1", "skill2", ...]`
 };
 
-const SKILL_JSON_REGEX = /SKILLS_JSON:\s*(\[[\s\S]*?\])/i;
-const CERTS_JSON_REGEX = /CERTS_JSON:\s*(\[[\s\S]*?\])/i;
+const RESUME_DATA_REGEX = /RESUME_DATA_JSON:\s*(\{[\s\S]*?\})/i;
 const mergeUnique = (...lists) => {
   const flattened = lists.flat().filter(Boolean);
   return [...new Set(flattened.map((skill) => skill.trim()))].filter(Boolean);
@@ -128,7 +148,7 @@ const geminiService = {
           },
           {
             role: 'model',
-            parts: [{ text: 'I understand. I\'m ready to help you with your resume.' }],
+            parts: [{ text: 'I understand. I\'m ready to help you build your resume. Let\'s start with your name and the job you are targeting.' }],
           },
           ...history.map(msg => ({
             role: msg.role === 'user' ? 'user' : 'model',
@@ -141,42 +161,30 @@ const geminiService = {
       const response = await result.response;
       const text = response.text().trim();
 
-      let extractedSkills = [];
-      let extractedCerts = [];
+      let extractedData = {};
       let cleanText = text;
-      
-      const skillsMatch = text.match(SKILL_JSON_REGEX);
-      if (skillsMatch) {
+
+      const dataMatch = text.match(RESUME_DATA_REGEX);
+      if (dataMatch) {
         try {
-          extractedSkills = JSON.parse(skillsMatch[1]);
+          extractedData = JSON.parse(dataMatch[1]);
         } catch (parseError) {
-          console.error('Error parsing SKILLS_JSON payload:', parseError);
+          console.error('Error parsing RESUME_DATA_JSON payload:', parseError);
         }
-        cleanText = cleanText.replace(skillsMatch[0], '').trim();
-      }
-      
-      const certsMatch = text.match(CERTS_JSON_REGEX);
-      if (certsMatch) {
-        try {
-          extractedCerts = JSON.parse(certsMatch[1]);
-        } catch (parseError) {
-          console.error('Error parsing CERTS_JSON payload:', parseError);
-        }
-        cleanText = cleanText.replace(certsMatch[0], '').trim();
+        cleanText = cleanText.replace(dataMatch[0], '').trim();
       }
 
       return {
         text: cleanText,
         action: null,
-        extractedSkills,
-        extractedCerts,
+        extractedData,
       };
     } catch (error) {
       console.error('Gemini API Error:', error);
       return {
         text: "I'm sorry, I encountered an error processing your request. Please try again.",
         action: null,
-        extractedSkills: [],
+        extractedData: {},
       };
     }
   },
@@ -467,12 +475,12 @@ router.get('/:id/pdf', protect, async (req, res) => {
 
     pythonProcess.on('close', (code) => {
       // Cleanup Input JSON
-      try { fs.unlinkSync(inputJsonPath); } catch (e) {}
+      try { fs.unlinkSync(inputJsonPath); } catch (e) { }
 
       if (code !== 0) {
         console.error(`Python exited with code ${code}`);
-        return res.status(500).json({ 
-          message: 'PDF generation failed. This usually means "tectonic" is not installed or the text contains invalid characters.' 
+        return res.status(500).json({
+          message: 'PDF generation failed. This usually means "tectonic" is not installed or the text contains invalid characters.'
         });
       }
 
@@ -481,13 +489,13 @@ router.get('/:id/pdf', protect, async (req, res) => {
         // If query param ?download=true is present, force download, else view inline
         const disposition = req.query.download === 'true' ? 'attachment' : 'inline';
         res.setHeader('Content-Disposition', `${disposition}; filename="${(resume.fullName || 'resume').replace(/\s+/g, '_')}.pdf"`);
-        
+
         const fileStream = fs.createReadStream(outputPdfPath);
         fileStream.pipe(res);
 
         // Delete PDF after sending
         fileStream.on('close', () => {
-           try { fs.unlinkSync(outputPdfPath); } catch (e) {}
+          try { fs.unlinkSync(outputPdfPath); } catch (e) { }
         });
       } else {
         res.status(500).json({ message: 'Output PDF not found.' });
@@ -518,25 +526,57 @@ router.post('/:id/ai/chat', protect, async (req, res) => {
 
     // Call the Gemini chat service
     const aiResponse = await geminiService.chat(history || [], message, resume.template);
-    
+
     let updated = false;
-    
-    if (aiResponse.extractedSkills?.length) {
-      const updatedSkills = mergeUnique(resume.skills || [], aiResponse.extractedSkills);
+    const data = aiResponse.extractedData || {};
+
+    // 1. Update Basic Info if provided
+    if (data.fullName) { resume.fullName = data.fullName; updated = true; }
+    if (data.professionalTitle) { resume.professionalTitle = data.professionalTitle; updated = true; }
+    if (data.dateOfBirth) { resume.dateOfBirth = data.dateOfBirth; updated = true; }
+    if (data.location) { resume.location = data.location; updated = true; }
+    if (data.education) { resume.education = data.education; updated = true; }
+
+    // 2. Update Contact Info
+    if (data.contact) {
+      if (data.contact.phone) resume.contact.phone = data.contact.phone;
+      if (data.contact.email) resume.contact.email = data.contact.email;
+      updated = true;
+    }
+
+    // 3. Update Work Experience (Append new ones)
+    if (data.workExperience && Array.isArray(data.workExperience) && data.workExperience.length > 0) {
+      // For simplicity, we'll append new jobs. In a real app, you might want to merge or dedup.
+      // We check if a job with the same company already exists to avoid duplicates.
+      data.workExperience.forEach(newJob => {
+        const exists = resume.workExperience.some(job =>
+          job.company.toLowerCase() === newJob.company.toLowerCase() &&
+          job.jobTitle.toLowerCase() === newJob.jobTitle.toLowerCase()
+        );
+        if (!exists) {
+          resume.workExperience.push(newJob);
+          updated = true;
+        }
+      });
+    }
+
+    // 4. Update Skills & Certs
+    if (data.skills?.length) {
+      const updatedSkills = mergeUnique(resume.skills || [], data.skills);
       if (updatedSkills.length !== (resume.skills || []).length) {
         resume.skills = updatedSkills;
         updated = true;
       }
     }
-    
-    if (aiResponse.extractedCerts?.length) {
-      const updatedCerts = mergeUnique(resume.certifications || [], aiResponse.extractedCerts);
+
+    if (data.certifications?.length) {
+      const updatedCerts = mergeUnique(resume.certifications || [], data.certifications);
       if (updatedCerts.length !== (resume.certifications || []).length) {
         resume.certifications = updatedCerts;
         updated = true;
       }
     }
-    
+
     if (updated) {
       await resume.save();
     }

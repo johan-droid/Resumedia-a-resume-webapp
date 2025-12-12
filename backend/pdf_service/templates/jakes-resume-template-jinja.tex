@@ -92,9 +92,9 @@
     \resumeSubheading
       { {{ exp.company }} }{ {{ exp.location }} }
       { {{ exp.position }} }{ {{ exp.date }} }
-      {% if exp.items %}
+      {% if exp.highlights %}
       \resumeItemListStart
-        {% for item in exp.items %}
+        {% for item in exp.highlights %}
         \resumeItem{ {{ item }} }
         {% endfor %}
       \resumeItemListEnd
@@ -110,9 +110,9 @@
       {% for project in projects %}
       \resumeProjectHeading
           {\textbf{ {{ project.name }} }{% if project.technologies %} $|$ \emph{ {{ project.technologies }} }{% endif %}}{ {{ project.date }} }
-          {% if project.items %}
+          {% if project.highlights %}
           \resumeItemListStart
-            {% for item in project.items %}
+            {% for item in project.highlights %}
             \resumeItem{ {{ item }} }
             {% endfor %}
           \resumeItemListEnd
