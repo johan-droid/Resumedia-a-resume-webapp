@@ -309,6 +309,39 @@
   border-radius: 4px;
 }
 
+/* Message Status */
+.status-icon {
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.sending-icon {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.retry-btn {
+  background: white;
+  color: #ef4444;
+  border: none;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+}
+
+.chat-bubble.error-bubble {
+  border: 1px solid #ef4444;
+  opacity: 0.9;
+}
+
 /* Error message */
 .error-message {
   color: #ff6b6b;
@@ -318,4 +351,27 @@
   margin: 0.5rem 0;
   font-size: 0.9rem;
   text-align: center;
+}
+
+.error-banner {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+  border-bottom: 1px solid #fecaca;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }

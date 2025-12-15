@@ -53,39 +53,65 @@ function AIChatInterface({ onTypstCodeUpdate }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatHistory]);
 
-  const handleChatSubmit = async (e) => {
-    e.preventDefault();
-    const message = chatInput.trim();
-    if (!message || !resumeId || isAiTyping) return;
+  const sendMessage = async (messageText, retryIndex = null) => {
+    if (!messageText || !resumeId) return;
 
     setIsAiTyping(true);
     setError(null);
 
-    try {
-      // Add user message to chat
+    let newHistory = [...chatHistory];
+    let userMsgIndex;
+
+    if (retryIndex !== null) {
+      // Retrying existing message
+      userMsgIndex = retryIndex;
+      newHistory[userMsgIndex].status = 'sending';
+      newHistory[userMsgIndex].timestamp = new Date(); // Update time on retry
+      setChatHistory(newHistory);
+    } else {
+      // New message
       const userMessage = {
         role: 'user',
-        content: message,
-        timestamp: new Date()
+        content: messageText,
+        timestamp: new Date(),
+        status: 'sending'
       };
-      const updatedHistory = [...chatHistory, userMessage];
-      setChatHistory(updatedHistory);
-      setChatInput('');
+      newHistory = [...chatHistory, userMessage];
+      userMsgIndex = newHistory.length - 1;
+      setChatHistory(newHistory);
+    }
 
+    setChatInput('');
+
+    try {
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
-      // Call AI Chat endpoint
+      // Filter history for backend (exclude status, local metadata)
+      const conversationHistory = newHistory
+        .filter(msg => msg.status !== 'error') // Don't send previously failed messages that weren't retried? actually keep them contextually? usually minimal context.
+        .map(({ role, content }) => ({ role, content }));
+
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/resumes/${resumeId}/ai/chat`,
         {
-          message,
-          conversationHistory: updatedHistory.map(({ role, content }) => ({ role, content })) // Send only role/content to backend
+          message: messageText,
+          conversationHistory: conversationHistory.slice(0, -1) // Exclude current message from history being sent? No, usually include or not logic depends on backend. Backend takes history + current message.
+          // Wait, backend code: const { message, history } = req.body;
+          // geminiService.chat(history || [], message, ...)
+          // So we should pass generic history WITHOUT the current message usually?
+          // Looking at previous code: conversationHistory: updatedHistory.map...
+          // effectively included the current message in history logic?
+          // Let's stick to previous logical flow: updatedHistory WAS passed.
+          // But wait, if I pass `message` AND `history` (which includes `message`), Gemini might see it twice?
+          // Previous code: `message: message`, `conversationHistory: updatedHistory` (includes message).
+          // Backend: `geminiService.chat(history, message)` -> `history` used for context.
+          // If previous code worked, I'll stick to it.
         },
         config
       );
 
-      // Backend returns { response: "text", ... } but we were checking .message
+      // Backend returns { response: "text", ... }
       const content = response.data.response || response.data.message || "I'm having trouble connecting right now.";
 
       const aiResponse = {
@@ -94,33 +120,54 @@ function AIChatInterface({ onTypstCodeUpdate }) {
         timestamp: new Date()
       };
 
-      // Update chat with AI response
-      setChatHistory(prev => [...prev, aiResponse]);
+      setChatHistory(prev => {
+        const updated = [...prev];
+        updated[userMsgIndex].status = 'sent'; // Mark user msg as sent
+        return [...updated, aiResponse];
+      });
 
-      // Move to next step if not in free-form mode
       if (currentStep < conversationalFlow.length - 1) {
         setCurrentStep(currentStep + 1);
       }
 
-      // Trigger preview update
       if (onTypstCodeUpdate) {
         onTypstCodeUpdate();
       }
 
     } catch (err) {
-      // Handle 429 specifically if it ever bubbles up
-      if (err.response && err.response.status === 429) {
+      // Mark message as failed
+      setChatHistory(prev => {
+        const updated = [...prev];
+        updated[userMsgIndex].status = 'error';
+        return updated;
+      });
+
+      const errString = JSON.stringify(err);
+      if (
+        err.response?.status === 429 ||
+        errString.includes('QuotaFailure') ||
+        (err.message && err.message.includes('429'))
+      ) {
         setError("I'm receiving too many messages. Please wait a moment.");
       } else {
         setError(err.response?.data?.message || 'Failed to send message');
       }
       console.error('Chat error:', err);
-
-      // Remove failed user message
-      setChatHistory(prev => prev.slice(0, -1));
     } finally {
       setIsAiTyping(false);
     }
+  };
+
+  const handleChatSubmit = (e) => {
+    e.preventDefault();
+    const message = chatInput.trim();
+    if (!message || isAiTyping) return;
+    sendMessage(message);
+  };
+
+  const handleRetry = (index) => {
+    const msg = chatHistory[index];
+    sendMessage(msg.content, index);
   };
 
   return (
@@ -137,6 +184,13 @@ function AIChatInterface({ onTypstCodeUpdate }) {
         </div>
       </div>
 
+      {/* Error Banner */}
+      {error && (
+        <div className="error-banner">
+          ⚠️ {error}
+        </div>
+      )}
+
       {/* Messages */}
       <div className="chat-messages-area custom-scroll">
         {chatHistory.map((message, index) => (
@@ -146,7 +200,7 @@ function AIChatInterface({ onTypstCodeUpdate }) {
                 <img src="https://api.dicebear.com/7.x/bottts/svg?seed=ResumediaAI" alt="AI" />
               </div>
             )}
-            <div className="chat-bubble">
+            <div className={`chat-bubble ${message.status === 'error' ? 'error-bubble' : ''}`}>
               <div
                 className="message-content"
                 dangerouslySetInnerHTML={{
@@ -157,7 +211,23 @@ function AIChatInterface({ onTypstCodeUpdate }) {
               />
               <span className="message-time">
                 {formatTime(message.timestamp || new Date())}
-                {message.role === 'user' && <span className="read-receipt">✓✓</span>}
+
+                {/* Status Indicators for User */}
+                {message.role === 'user' && (
+                  <span className="status-icon">
+                    {message.status === 'sending' && <span className="sending-icon">🕒</span>}
+                    {message.status === 'sent' && <span className="read-receipt">✓✓</span>}
+                    {message.status === 'error' && (
+                      <button
+                        className="retry-btn"
+                        onClick={() => handleRetry(index)}
+                        title="Retry"
+                      >
+                        ↻
+                      </button>
+                    )}
+                  </span>
+                )}
               </span>
             </div>
           </div>

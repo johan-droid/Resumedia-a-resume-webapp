@@ -185,14 +185,14 @@ const geminiService = {
       console.error('Gemini API Error:', error);
 
       // Propagate 429 errors
-      if (error.response?.status === 429 || error.status === 429 || JSON.stringify(error).includes('QuotaFailure')) {
-        const error429 = new Error('Too Many Requests');
-        error429.status = 429;
-        throw error429;
-      }
-
-      // Check for other common Google API error structures
-      if (error.message && error.message.includes('429')) {
+      const errString = JSON.stringify(error);
+      if (
+        error.response?.status === 429 ||
+        error.status === 429 ||
+        errString.includes('QuotaFailure') ||
+        errString.includes('429') ||
+        (error.message && error.message.includes('429'))
+      ) {
         const error429 = new Error('Too Many Requests');
         error429.status = 429;
         throw error429;
