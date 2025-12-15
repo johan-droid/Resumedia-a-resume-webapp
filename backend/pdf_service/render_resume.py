@@ -35,10 +35,14 @@ def render_resume_to_pdf(resume_data, output_path, template_name="jakes-resume-t
         # Prepare template data
         template_data = {
             'name': basics.get('name', 'Your Name'),
+            'title': basics.get('professionalTitle', ''),
+            'dob': basics.get('dateOfBirth', ''),
+            'summary': basics.get('summary', ''),
             'email': basics.get('email', ''),
             'phone': basics.get('phone', ''),
             'linkedin': basics.get('linkedin', ''),
             'github': basics.get('github', ''),
+            'location': basics.get('location', {}).get('address', ''),
             'experience': [{
                 'company': job.get('company', ''),
                 'position': job.get('position', ''),

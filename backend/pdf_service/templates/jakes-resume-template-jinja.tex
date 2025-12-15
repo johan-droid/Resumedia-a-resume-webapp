@@ -66,11 +66,19 @@
 
 % Header
 \begin{center}
-    \textbf{\Huge \scshape {{ name }}} \\ \vspace{1pt}
+    \textbf{\Huge \scshape {{ name }}} \\ \vspace{4pt}
+    {% if title %} \textbf{\large {{ title }}} \\ \vspace{4pt} {% endif %}
+    {% if location %}\small {{ location }}{% endif %}{% if location and dob %} $|$ {% endif %}
+    {% if dob %}\small {{ dob }}{% endif %}{% if dob and (phone or email) %} $|$ {% endif %}
     {% if phone %}\small {{ phone }}{% endif %}{% if phone and email %} $|$ {% endif %}{% if email %}\href{mailto:{{ email }}}{\underline{ {{ email }} }}{% endif %}
     {% if linkedin %} $|$ \href{https://linkedin.com/in/{{ linkedin }}}{\underline{linkedin.com/in/{{ linkedin }}}}{% endif %}
     {% if github %} $|$ \href{https://github.com/{{ github }}}{\underline{github.com/{{ github }}}}{% endif %}
 \end{center}
+
+{% if summary %}
+\section{Summary}
+{{ summary }}
+{% endif %}
 
 {% if education %}
 % Education

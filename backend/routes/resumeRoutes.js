@@ -44,13 +44,15 @@ const mapResumeToLatexFormat = (mongoResume) => {
       skills: "Qualifications"
     },
     basics: {
-      name: mongoResume.fullName || "Your Name",
+      name: (mongoResume.fullName && mongoResume.fullName !== 'Untitled Resume') ? mongoResume.fullName : "Your Name",
+      professionalTitle: mongoResume.professionalTitle || "",
+      dateOfBirth: mongoResume.dateOfBirth || "",
       email: contact.email || "",
       phone: contact.phone || "",
       linkedin: "",
       github: "",
       location: { address: mongoResume.location || "" },
-      summary: summary
+      summary: mongoResume.summary || mongoResume.experienceSummary || ""
     },
     education: mongoResume.education ? [{
       institution: mongoResume.education,
@@ -325,7 +327,7 @@ router.post('/', protect, async (req, res) => {
     } = req.body;
 
     const user = req.user;
-    const fallbackName = user?.username || user?.name || 'Untitled Resume';
+    const fallbackName = 'Untitled Resume';
     const fallbackTitle = 'Professional';
 
     const newResume = new Resume({
