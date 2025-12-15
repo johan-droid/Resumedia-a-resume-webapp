@@ -3,10 +3,10 @@ const mongoose = require('mongoose');
 const workExperienceSchema = new mongoose.Schema({
   jobTitle: { type: String, required: true },
   company: { type: String, required: true },
-  location: String,
-  startDate: String,
-  endDate: String,
-  duties: [String],
+  location: { type: String, default: '' },
+  startDate: { type: String, default: '' },
+  endDate: { type: String, default: '' },
+  duties: [{ type: String }],
 });
 
 const resumeSchema = new mongoose.Schema(
@@ -17,28 +17,32 @@ const resumeSchema = new mongoose.Schema(
       ref: 'User' 
     },
     fullName: { type: String, required: true },
-    professionalTitle: { type: String, required: true }, // e.g., "Certified Welder", "Commercial Driver"
-    contact: {
-      phone: String,
-      email: String,
+    professionalTitle: { type: String, required: true }, 
+    contact: { 
+      phone: { type: String, default: '' },
+      email: { type: String, default: '' }
     },
-    education: String,
-    dateOfBirth: String,
-    location: String,
-    experienceSummary: String,
-    jobStatus: String,
-    template: {
-      type: String,
-      default: 'skills-first',
-    },
-    summary: String,
+    education: { type: String, default: '' },
+    dateOfBirth: { type: String, default: '' },
+    location: { type: String, default: '' },
+    experienceSummary: { type: String, default: '' },
+    jobStatus: { type: String, default: '' },
+    template: { type: String, default: 'skills-first' },
+    summary: { type: String, default: '' },
     workExperience: [workExperienceSchema],
-    skills: [String], // e.g., "Forklift Operation", "Blueprint Reading"
-    certifications: [String], // e.g., "OSHA 10", "CDL Class A"
+    skills: [{ type: String }],
+    certifications: [{ type: String }],
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
+
+// Validation method
+resumeSchema.methods.validateForPDF = function() {
+  const errors = [];
+  if (!this.fullName || this.fullName.trim() === '') errors.push('Full name is required');
+  if (!this.professionalTitle || this.professionalTitle.trim() === '') errors.push('Professional title is required');
+  if (!this.contact.email || this.contact.email.trim() === '') errors.push('Email is required');
+  return { isValid: errors.length === 0, errors };
+};
 
 module.exports = mongoose.model('Resume', resumeSchema);

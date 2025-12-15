@@ -183,6 +183,21 @@ const geminiService = {
       };
     } catch (error) {
       console.error('Gemini API Error:', error);
+
+      // Propagate 429 errors
+      if (error.response?.status === 429 || error.status === 429 || JSON.stringify(error).includes('QuotaFailure')) {
+        const error429 = new Error('Too Many Requests');
+        error429.status = 429;
+        throw error429;
+      }
+
+      // Check for other common Google API error structures
+      if (error.message && error.message.includes('429')) {
+        const error429 = new Error('Too Many Requests');
+        error429.status = 429;
+        throw error429;
+      }
+
       return {
         text: "I'm sorry, I encountered an error processing your request. Please try again.",
         action: null,
@@ -215,6 +230,14 @@ const geminiService = {
       }
     } catch (error) {
       console.error('Gemini Skill Extraction Error:', error);
+
+      // Propagate 429 errors
+      if (error.response?.status === 429 || error.status === 429 || JSON.stringify(error).includes('QuotaFailure')) {
+        const error429 = new Error('Too Many Requests');
+        error429.status = 429;
+        throw error429;
+      }
+
       return [];
     }
   },
@@ -592,6 +615,9 @@ router.post('/:id/ai/chat', protect, async (req, res) => {
     });
 
   } catch (error) {
+    if (error.status === 429) {
+      return res.status(429).json({ message: 'Too Many Requests. Please try again later.' });
+    }
     console.error('Error in AI chat endpoint:', error);
     res.status(500).json({ message: 'Server Error in AI chat' });
   }
