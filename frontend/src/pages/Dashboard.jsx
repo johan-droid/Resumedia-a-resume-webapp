@@ -3,12 +3,48 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import DashboardLayout from '../components/DashboardLayout';
+import './Dashboard.css';
 
 function Dashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [resumes, setResumes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [hoveredResumeId, setHoveredResumeId] = useState(null);
+
+  const templates = [
+    {
+      id: 'skills-first',
+      name: 'Skills First',
+      description: 'Highlight your core competencies upfront',
+      icon: '⭐',
+      color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    },
+    {
+      id: 'chronological',
+      name: 'Chronological',
+      description: 'Traditional timeline of your experience',
+      icon: '📅',
+      color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    },
+    {
+      id: 'modern-minimal',
+      name: 'Modern Minimal',
+      description: 'Clean and contemporary design',
+      icon: '✨',
+      color: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    },
+    {
+      id: 'creative',
+      name: 'Creative',
+      description: 'Stand out with unique formatting',
+      icon: '🎨',
+      color: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    },
+  ];
 
   // Fetch data on load
   useEffect(() => {
@@ -31,17 +67,17 @@ function Dashboard() {
     fetchData();
   }, [navigate]);
 
-  // Handle Create New Resume - Direct creation with default template
-  const createNewResume = async () => {
+  // Handle Create New Resume with template selection
+  const handleCreateResume = async (templateId) => {
     try {
+      setIsCreating(true);
       const token = localStorage.getItem('token');
       if (!token) {
         alert(t('auth.unauthorized', 'Please log in to create a resume'));
         return;
       }
 
-      // Default to skills-first
-      const payload = { template: 'skills-first' };
+      const payload = { template: templateId };
       const config = {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -50,22 +86,31 @@ function Dashboard() {
       };
 
       const res = await axios.post('http://localhost:5001/api/resumes', payload, config);
-
       const newResumeId = res.data?._id;
+
       if (newResumeId) {
-        navigate(`/editor/${newResumeId}`);
+        setShowTemplateModal(false);
+        setTimeout(() => {
+          navigate(`/editor/${newResumeId}`);
+        }, 300);
       }
     } catch (err) {
       console.error('Error creating resume:', err);
       const errorMessage = err.response?.data?.message || t('resume.error', 'Error creating resume');
       alert(errorMessage);
 
-      // If token is invalid/expired, redirect to login
       if (err.response?.status === 401) {
         localStorage.removeItem('token');
         navigate('/login');
       }
+    } finally {
+      setIsCreating(false);
     }
+  };
+
+  const getResumeIcon = (index) => {
+    const icons = ['⭐', '📋', '📑'];
+    return icons[index % icons.length];
   };
 
   if (isLoading) {
@@ -76,81 +121,190 @@ function Dashboard() {
         alignItems: 'center',
         height: '60vh'
       }}>
-        <div className="loading-spinner">Loading...</div>
+        <div className="loading-spinner">
+          <div className="spinner-ring"></div>
+          <p>Loading your workspace...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <DashboardLayout showNav={true}>
-      <div className="fade-in">
-        <div style={{ marginBottom: '2.5rem' }}>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Dashboard</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            {t('dashboard.subtitle', 'Manage your projects and explore AI features.')}
-          </p>
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '20px',
-          marginBottom: '4rem'
-        }}>
-          {/* Create New Resume Card */}
-          <div
-            onClick={createNewResume}
-            className="glass-panel"
-            style={{
-              gridColumn: 'span 2',
-              minHeight: '250px',
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(236, 72, 153, 0.15))',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              padding: '3rem',
-              cursor: 'pointer',
-              position: 'relative',
-              overflow: 'hidden',
-              border: '1px solid rgba(255,255,255,0.1)'
-            }}
-          >
-            <div style={{ position: 'relative', zIndex: 2 }}>
-              <h2 style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>
-                + {t('dashboard.newResume', 'New Resume')}
-              </h2>
-              <p style={{ color: 'var(--text-secondary)', maxWidth: '400px' }}>
-                {t('dashboard.newResumeDesc', 'Start a blank canvas or let our AI guide you.')}
-              </p>
-            </div>
-            <div style={{
-              position: 'absolute',
-              right: '-50px',
-              bottom: '-50px',
-              width: '200px',
-              height: '200px',
-              background: 'var(--accent-primary)',
-              filter: 'blur(80px)',
-              opacity: 0.3,
-              zIndex: 1
-            }}></div>
-          </div>
-
-          <div className="glass-panel" style={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: '2rem'
-          }}>
-            <h3 style={{ fontSize: '3.5rem', color: '#fff', marginBottom: '0' }}>
-              {resumes.length}
-            </h3>
-            <p style={{ color: 'var(--text-secondary)' }}>
-              {t('dashboard.totalResumes', 'Total Resumes')}
+      <div className="dashboard-container fade-in">
+        {/* Header Section */}
+        <div className="dashboard-header">
+          <div className="header-content">
+            <h1 className="header-title">Dashboard</h1>
+            <p className="header-subtitle">
+              {t('dashboard.subtitle', 'Manage your projects and explore AI features.')}
             </p>
           </div>
+          <div className="header-stats">
+            <div className="stat-item">
+              <span className="stat-number">{resumes.length}</span>
+              <span className="stat-label">Resumes Created</span>
+            </div>
+          </div>
         </div>
+
+        {/* Main Grid */}
+        <div className="dashboard-grid">
+          {/* Create New Resume Card - Enhanced */}
+          <div
+            onClick={() => setShowTemplateModal(true)}
+            className="create-resume-card glass-panel"
+          >
+            <div className="card-glow"></div>
+            <div className="card-content">
+              <div className="create-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </div>
+              <h2 className="create-title">{t('dashboard.newResume', 'Create New Resume')}</h2>
+              <p className="create-subtitle">
+                {t('dashboard.newResumeDesc', 'Choose from modern templates and let AI help you')}
+              </p>
+              <div className="create-footer">
+                <span className="badge">AI-Powered</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="stats-column">
+            {/* Total Resumes */}
+            <div className="stat-card glass-panel">
+              <div className="stat-card-icon">📄</div>
+              <div className="stat-card-content">
+                <div className="stat-card-value">{resumes.length}</div>
+                <div className="stat-card-label">Total Resumes</div>
+              </div>
+              <div className="stat-card-arrow">→</div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="stat-card glass-panel accent">
+              <div className="stat-card-icon">⚡</div>
+              <div className="stat-card-content">
+                <div className="stat-card-value">Ready</div>
+                <div className="stat-card-label">To Download</div>
+              </div>
+              <div className="stat-card-arrow">→</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Resumes Section */}
+        {resumes.length > 0 && (
+          <div className="recent-section">
+            <h3 className="section-title">Your Resumes</h3>
+            <div className="resumes-list">
+              {resumes.slice(0, 3).map((resume, index) => (
+                <div
+                  key={resume._id}
+                  className="resume-item glass-panel"
+                  onClick={() => navigate(`/editor/${resume._id}`)}
+                  onMouseEnter={() => setHoveredResumeId(resume._id)}
+                  onMouseLeave={() => setHoveredResumeId(null)}
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="resume-item-icon">{getResumeIcon(index)}</div>
+                  <div className="resume-item-content">
+                    <h4 className="resume-item-name">{resume.title || 'Untitled Resume'}</h4>
+                    <p className="resume-item-date">
+                      Updated {new Date(resume.updatedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="resume-item-actions">
+                    {hoveredResumeId === resume._id && (
+                      <>
+                        <button className="action-btn edit-btn" onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/editor/${resume._id}`);
+                        }} title="Edit">
+                          ✎
+                        </button>
+                        <button className="action-btn download-btn" title="Download">
+                          ⬇
+                        </button>
+                      </>
+                    )}
+                    <div className="resume-item-arrow">→</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {resumes.length > 3 && (
+              <button 
+                className="view-all-btn"
+                onClick={() => navigate('/myresumes')}
+              >
+                View All Resumes →
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Template Selection Modal */}
+        {showTemplateModal && (
+          <div className="modal-overlay" onClick={() => setShowTemplateModal(false)}>
+            <div className="modal-content glass-panel" onClick={(e) => e.stopPropagation()}>
+              <button 
+                className="modal-close"
+                onClick={() => setShowTemplateModal(false)}
+              >
+                ✕
+              </button>
+
+              <div className="modal-header">
+                <h2>Choose Your Template</h2>
+                <p>Select a design that matches your style</p>
+              </div>
+
+              <div className="templates-grid">
+                {templates.map((template) => (
+                  <div
+                    key={template.id}
+                    className={`template-card ${selectedTemplate === template.id ? 'selected' : ''}`}
+                    onClick={() => setSelectedTemplate(template.id)}
+                  >
+                    <div
+                      className="template-preview"
+                      style={{ background: template.color }}
+                    >
+                      <span className="template-emoji">{template.icon}</span>
+                    </div>
+                    <div className="template-info">
+                      <h3>{template.name}</h3>
+                      <p>{template.description}</p>
+                    </div>
+                    {selectedTemplate === template.id && (
+                      <div className="template-check">✓</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  className="btn-secondary"
+                  onClick={() => setShowTemplateModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn-primary"
+                  onClick={() => handleCreateResume(selectedTemplate || 'skills-first')}
+                  disabled={isCreating}
+                >
+                  {isCreating ? 'Creating...' : 'Create Resume'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
